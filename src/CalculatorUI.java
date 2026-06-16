@@ -15,6 +15,10 @@ public class CalculatorUI extends JFrame {
     DefaultListModel<String> historyModel;
     JList<String> historyList;
 
+    java.util.ArrayList<JCheckBox> functionChecks = new java.util.ArrayList<>();
+    java.util.ArrayList<String> functionNames = new java.util.ArrayList<>();
+    JPanel functionPanel = new JPanel();
+
     JTextField functionField, rangeField, stepField;
     JButton plotButton, saveButton, themeButton;
 
@@ -33,6 +37,8 @@ public class CalculatorUI extends JFrame {
         setTitle("Graphical Calculator");
         setSize(900, 600);
         setLayout(new BorderLayout());
+        functionPanel.setLayout(new BoxLayout(functionPanel, BoxLayout.Y_AXIS));
+        add(functionPanel, BorderLayout.EAST);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         // ================= TOP PANEL =================
@@ -121,7 +127,7 @@ public class CalculatorUI extends JFrame {
 
             slider.setMinimum((int) start);
             slider.setMaximum((int) end);
-            slider.setValue((int) start);
+
 
             XYSeriesCollection dataset = new XYSeriesCollection();
 
@@ -129,12 +135,36 @@ public class CalculatorUI extends JFrame {
                     Color.RED, Color.BLUE, Color.GREEN,
                     Color.ORANGE, Color.MAGENTA, Color.CYAN
             };
+            
+            
+            // only update panel if first time OR mismatch
+            if (functionChecks.size() != functions.length) {
 
-            for (int i = 0; i < functions.length; i++) {
+                functionPanel.removeAll();
+                functionChecks.clear();
+                functionNames.clear();
 
-                String func = functions[i].trim();
+                for (String func : functions) {
+                    func = func.trim();
 
-                expression = new ExpressionBuilder(func)
+                    JCheckBox box = new JCheckBox(func, true);
+
+                    functionChecks.add(box);
+                    functionNames.add(func);
+                    functionPanel.add(box);
+                }
+
+                functionPanel.revalidate();
+                functionPanel.repaint();
+            }
+
+            for (int i = 0; i < functionNames.size(); i++) {
+
+                if (!functionChecks.get(i).isSelected()) continue;
+
+                String func = functionNames.get(i);
+
+                Expression expression = new ExpressionBuilder(func)
                         .variable("x")
                         .build();
 
@@ -167,6 +197,9 @@ public class CalculatorUI extends JFrame {
 
             plot.setRenderer(renderer);
             chartPanel.setChart(chart);
+
+            functionPanel.revalidate();
+            functionPanel.repaint();
 
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Invalid Input!");

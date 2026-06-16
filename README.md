@@ -73,4 +73,3 @@ sin(x), cos(x), x^2
 ## Author
 
 Rohit Rajana
-Java CSE Project — Graphical Calculator

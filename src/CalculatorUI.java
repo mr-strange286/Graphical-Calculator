@@ -12,6 +12,8 @@ import net.objecthunter.exp4j.ExpressionBuilder;
 
 public class CalculatorUI extends JFrame {
 
+    DefaultListModel<String> historyModel;
+    JList<String> historyList;
     JTextField functionField, rangeField, stepField;
     JButton plotButton, saveButton;
     JSlider slider;
@@ -61,7 +63,30 @@ public class CalculatorUI extends JFrame {
 
         bottomPanel.add(sliderLabel);
         bottomPanel.add(slider);
-        add(bottomPanel, BorderLayout.SOUTH);
+        add(bottomPanel, BorderLayout.SOUTH);historyModel = new DefaultListModel<>();
+        historyList = new JList<>(historyModel);
+        historyList.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+
+                if (e.getClickCount() == 2) { // double click
+                    String selected = historyList.getSelectedValue();
+
+                    if (selected == null) return;
+
+                    // extract function from history line
+                    String function = selected.split(" : ")[1];
+
+                    functionField.setText(function);
+
+                    plotGraph(); // auto replot
+                }
+            }
+        });
+
+        JScrollPane historyScroll = new JScrollPane(historyList);
+        historyScroll.setPreferredSize(new Dimension(180, 0));
+
+        add(historyScroll, BorderLayout.WEST);
 
         plotButton.addActionListener(e -> plotGraph());
         saveButton.addActionListener(e -> saveGraph());
@@ -74,6 +99,8 @@ public class CalculatorUI extends JFrame {
     private void plotGraph() {
         try {
             String function = functionField.getText();
+            String entry = HistoryManager.saveHistory(function);
+            historyModel.addElement(entry);
             String[] range = rangeField.getText().split(",");
 
             double start = Double.parseDouble(range[0]);

@@ -14,16 +14,19 @@ public class CalculatorUI extends JFrame {
 
     DefaultListModel<String> historyModel;
     JList<String> historyList;
+
     JTextField functionField, rangeField, stepField;
-    JButton plotButton, saveButton;
+    JButton plotButton, saveButton, themeButton;
+
     JSlider slider;
     JLabel sliderLabel;
+
     ChartPanel chartPanel;
     JFreeChart chart;
 
+    boolean darkMode = false;
+
     Expression expression;
-    XYSeries functionSeries;
-    XYSeries pointSeries;
 
     public CalculatorUI() {
 
@@ -32,6 +35,7 @@ public class CalculatorUI extends JFrame {
         setLayout(new BorderLayout());
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
+        // ================= TOP PANEL =================
         JPanel topPanel = new JPanel(new GridLayout(2, 4));
 
         functionField = new JTextField("sin(x)");
@@ -40,12 +44,12 @@ public class CalculatorUI extends JFrame {
 
         plotButton = new JButton("Plot Graph");
         saveButton = new JButton("Save Graph");
+        themeButton = new JButton("Dark Mode");
 
         topPanel.add(new JLabel("Function:"));
         topPanel.add(functionField);
-        topPanel.add(new JLabel("Range (start,end):"));
+        topPanel.add(new JLabel("Range:"));
         topPanel.add(rangeField);
-
         topPanel.add(new JLabel("Step:"));
         topPanel.add(stepField);
         topPanel.add(plotButton);
@@ -53,56 +57,64 @@ public class CalculatorUI extends JFrame {
 
         add(topPanel, BorderLayout.NORTH);
 
+        // ================= CHART =================
         chart = ChartFactory.createXYLineChart("Graph", "X", "Y", null);
         chartPanel = new ChartPanel(chart);
         add(chartPanel, BorderLayout.CENTER);
 
+        // ================= SLIDER =================
         JPanel bottomPanel = new JPanel();
+
         slider = new JSlider();
         sliderLabel = new JLabel("x = 0 , y = 0");
 
         bottomPanel.add(sliderLabel);
         bottomPanel.add(slider);
-        add(bottomPanel, BorderLayout.SOUTH);historyModel = new DefaultListModel<>();
+
+        add(bottomPanel, BorderLayout.SOUTH);
+
+        // ================= HISTORY =================
+        historyModel = new DefaultListModel<>();
         historyList = new JList<>(historyModel);
+
         historyList.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent e) {
-
-                if (e.getClickCount() == 2) { // double click
+                if (e.getClickCount() == 2) {
                     String selected = historyList.getSelectedValue();
-
                     if (selected == null) return;
 
-                    // extract function from history line
-                    String function = selected.split(" : ")[1];
+                    String[] parts = selected.split(" : ");
+                    if (parts.length < 2) return;
 
-                    functionField.setText(function);
-
-                    plotGraph(); // auto replot
+                    functionField.setText(parts[1]);
+                    plotGraph();
                 }
             }
         });
 
         JScrollPane historyScroll = new JScrollPane(historyList);
         historyScroll.setPreferredSize(new Dimension(180, 0));
-
         add(historyScroll, BorderLayout.WEST);
 
+        // ================= EVENTS =================
         plotButton.addActionListener(e -> plotGraph());
         saveButton.addActionListener(e -> saveGraph());
-
+        themeButton.addActionListener(e -> toggleTheme());
         slider.addChangeListener(e -> updatePoint());
 
         setVisible(true);
     }
 
+    // ================= PLOT GRAPH =================
     private void plotGraph() {
         try {
-            String function = functionField.getText();
-            String entry = HistoryManager.saveHistory(function);
-            historyModel.addElement(entry);
-            String[] range = rangeField.getText().split(",");
 
+            String input = functionField.getText();
+            String[] functions = input.split(",");
+
+            historyModel.addElement("PLOT : " + input);
+
+            String[] range = rangeField.getText().split(",");
             double start = Double.parseDouble(range[0]);
             double end = Double.parseDouble(range[1]);
             double step = Double.parseDouble(stepField.getText());
@@ -111,77 +123,71 @@ public class CalculatorUI extends JFrame {
             slider.setMaximum((int) end);
             slider.setValue((int) start);
 
-            functionSeries = new XYSeries("f(x)");
-            pointSeries = new XYSeries("Point");
+            XYSeriesCollection dataset = new XYSeriesCollection();
 
-            expression = new ExpressionBuilder(function)
-                    .variable("x")
-                    .build();
+            Color[] colors = {
+                    Color.RED, Color.BLUE, Color.GREEN,
+                    Color.ORANGE, Color.MAGENTA, Color.CYAN
+            };
 
-            FileWriter writer = new FileWriter("data.csv");
-            writer.write("Function: " + function + "\n");
-            writer.write("x,y\n");
+            for (int i = 0; i < functions.length; i++) {
 
-            for (double x = start; x <= end; x += step) {
-                expression.setVariable("x", x);
-                double y = expression.evaluate();
+                String func = functions[i].trim();
 
-                functionSeries.add(x, y);
-                writer.write(x + "," + y + "\n");
+                expression = new ExpressionBuilder(func)
+                        .variable("x")
+                        .build();
+
+                XYSeries series = new XYSeries(func);
+
+                for (double x = start; x <= end; x += step) {
+                    expression.setVariable("x", x);
+                    double y = expression.evaluate();
+                    series.add(x, y);
+                }
+
+                dataset.addSeries(series);
             }
 
-            writer.close();
-
-            double x0 = slider.getValue();
-            expression.setVariable("x", x0);
-            double y0 = expression.evaluate();
-            pointSeries.add(x0, y0);
-
-            XYSeriesCollection dataset = new XYSeriesCollection();
-            dataset.addSeries(functionSeries);
-            dataset.addSeries(pointSeries);
-
             chart = ChartFactory.createXYLineChart(
-                    "Graph of " + function,
-                    "X", "Y",
+                    "Graph",
+                    "X",
+                    "Y",
                     dataset
             );
 
             XYPlot plot = chart.getXYPlot();
             XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer();
 
-            renderer.setSeriesLinesVisible(0, true);
-            renderer.setSeriesShapesVisible(0, false);
-
-            renderer.setSeriesLinesVisible(1, false);
-            renderer.setSeriesShapesVisible(1, true);
+            for (int i = 0; i < dataset.getSeriesCount(); i++) {
+                renderer.setSeriesLinesVisible(i, true);
+                renderer.setSeriesShapesVisible(i, false);
+                renderer.setSeriesPaint(i, colors[i % colors.length]);
+            }
 
             plot.setRenderer(renderer);
-
             chartPanel.setChart(chart);
 
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Invalid Function or Input!");
+            JOptionPane.showMessageDialog(this, "Invalid Input!");
         }
     }
 
+    // ================= SLIDER POINT =================
     private void updatePoint() {
         try {
-            if (expression == null || pointSeries == null) return;
+            if (expression == null) return;
 
             double x = slider.getValue();
             expression.setVariable("x", x);
             double y = expression.evaluate();
 
-            pointSeries.clear();
-            pointSeries.add(x, y);
+            sliderLabel.setText("x = " + x + " , y = " + String.format("%.4f", y));
 
-            sliderLabel.setText("Fixed x = " + x + " , f(x) = " + String.format("%.4f", y));
-
-        } catch (Exception e) {
-        }
+        } catch (Exception e) {}
     }
 
+    // ================= SAVE GRAPH =================
     private void saveGraph() {
         try {
             ChartUtils.saveChartAsPNG(
@@ -191,10 +197,31 @@ public class CalculatorUI extends JFrame {
                     600
             );
 
-            JOptionPane.showMessageDialog(this, "Graph saved!");
+            JOptionPane.showMessageDialog(this, "Saved!");
 
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error saving graph");
         }
+    }
+
+    // ================= DARK MODE =================
+    private void toggleTheme() {
+
+        darkMode = !darkMode;
+
+        Color bg = darkMode ? Color.DARK_GRAY : Color.WHITE;
+        Color fg = darkMode ? Color.WHITE : Color.BLACK;
+
+        getContentPane().setBackground(bg);
+
+        functionField.setBackground(bg);
+        rangeField.setBackground(bg);
+        stepField.setBackground(bg);
+
+        functionField.setForeground(fg);
+        rangeField.setForeground(fg);
+        stepField.setForeground(fg);
+
+        sliderLabel.setForeground(fg);
     }
 }

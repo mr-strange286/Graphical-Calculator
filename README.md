@@ -5,6 +5,9 @@
 A Java Swing-based graphical calculator with graph plotting capabilities.
 
 
+## Screenshot
+
+![Calculator UI](screenshots/calculator.png)
 
 \## Features
 

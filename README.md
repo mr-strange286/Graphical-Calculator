@@ -1,75 +1,47 @@
-\# Graphical Calculator
+# Graphical Calculator
 
-
-
-A Java Swing-based graphical calculator with graph plotting capabilities.
-
+A Java Swing-based graphical calculator with graph plotting capabilities using JFreeChart and exp4j.
 
 ## Screenshot
 
 ![Calculator UI](screenshots/calculator.png)
 
-\## Features
+## Features
 
+- Basic arithmetic operations
+- Function graph plotting
+- Expression evaluation using exp4j
+- Save graphs as PNG images
+- Interactive GUI built with Java Swing
 
+## Technologies Used
 
-\- Basic arithmetic operations
+- Java
+- Swing
+- JFreeChart
+- exp4j
 
-\- Expression evaluation using exp4j
-
-\- Function graph plotting using JFreeChart
-
-\- GUI built with Java Swing
-
-\- Save graph as PNG image
-
-
-
-\## Project Structure
-
-
+## Project Structure
 
 ```
-
-src/    Java source files
-
-lib/    External libraries
-
-bin/    Compiled class files
-
+src/          Source files
+lib/          External libraries
+screenshots/  Images
+data.csv      Data storage
 ```
 
-
-
-\## Compile
-
-
+## Compile
 
 ```bash
-
-javac -cp "lib/\*" -d bin src/\*.java
-
+javac -cp "lib/*" -d bin src/*.java
 ```
 
-
-
-\## Run
-
-
+## Run
 
 ```bash
-
-java -cp "bin;lib/\*" GraphicalCalculator
-
+java -cp "bin;lib/*" GraphicalCalculator
 ```
 
+## Author
 
-
-\## Libraries Used
-
-
-
-\- exp4j
-
-\- JFreeChart
-
+Rohit Rajana
